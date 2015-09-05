@@ -216,30 +216,48 @@
             {
                 System.Reflection.ParameterInfo[] parameterInfos = methodInfo.GetParameters();
 
-                if (parameterInfos.Count() > 7)
-                {
-                    throw new NotSupportedException(
-                        string.Format(
-                            "Only interface methods with less or equal 7 parameters are supported: {0}.{1}({2})!",
-                        // ReSharper disable once PossibleNullReferenceException
-                            methodInfo.DeclaringType.FullName.Replace("+", "."),
-                            methodInfo.Name,
-                            string.Join(", ",
-                                methodInfo.GetParameters()
-                                    .Select(p => string.Format("{0} {1}", p.ParameterType.Name, p.Name)))));
-                }
-
                 Type actionType;
+                switch (parameterInfos.Count())
+                {
+                    case 0:
+                        actionType = typeof(Action);
+                        break;
+                    case 1:
+                        actionType = typeof(Action<>);
+                        break;
+                    case 2:
+                        actionType = typeof(Action<,>);
+                        break;
+                    case 3:
+                        actionType = typeof(Action<,,>);
+                        break;
+                    case 4:
+                        actionType = typeof(Action<,,,>);
+                        break;
+                    case 5:
+                        actionType = typeof(Action<,,,,>);
+                        break;
+                    case 6:
+                        actionType = typeof(Action<,,,,,>);
+                        break;
+                    case 7:
+                        actionType = typeof(Action<,,,,,,>);
+                        break;
+                    default:
+                        throw new NotSupportedException(
+                            string.Format(
+                                "Only interface methods with less or equal 7 parameters are supported: {0}.{1}({2})!",
+                            // ReSharper disable once PossibleNullReferenceException
+                                methodInfo.DeclaringType.FullName.Replace("+", "."),
+                                methodInfo.Name,
+                                string.Join(", ",
+                                    methodInfo.GetParameters()
+                                        .Select(p => string.Format("{0} {1}", p.ParameterType.Name, p.Name)))));
+                }
 
                 if (parameterInfos.Any())
                 {
-                    actionType = parameterInfos.Length > 1
-                        ? typeof(Action<,>).MakeGenericType(parameterInfos.Select(p => p.ParameterType).ToArray())
-                        : typeof(Action<>).MakeGenericType(parameterInfos.Select(p => p.ParameterType).ToArray());
-                }
-                else
-                {
-                    actionType = typeof(Action);
+                    actionType = actionType.MakeGenericType(parameterInfos.Select(p => p.ParameterType).ToArray());
                 }
 
                 Delegate actionDelegate = Delegate.CreateDelegate(actionType, instance, methodInfo);
